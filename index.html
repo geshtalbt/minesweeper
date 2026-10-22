@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Сапер</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Grotesk:wght@400;700;900&family=Grotesk+Mono:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-light" data-palette="orange">
+  <div class="game-container">
+    <header>
+      <div class="brand">
+        <span class="brand-kicker">CONCEPT POSTER SERIES</span>
+        <h1>Сапер</h1>
+      </div>
+      <div class="status">
+        <span class="mines-left">Мины: 10</span>
+        <span class="timer">00:00</span>
+      </div>
+      <div class="theme-toggle" aria-label="Переключить тему" role="switch" aria-checked="false">🌓</div>
+      <div class="palette-dropdown">
+        <button class="palette-toggle" aria-label="Выбрать цветовую палитру" aria-haspopup="true" aria-expanded="false" title="Цветовая палитра">
+          <span class="palette-toggle-preview" style="--palette-color: #f4c9a8;"></span>
+        </button>
+        <div class="palette-menu" role="menu" aria-label="Цветовые палитры">
+          <button class="palette-menu-item active" role="menuitem" data-palette="orange" title="Оранжевая" style="--palette-color: #f4c9a8;"><span class="palette-menu-preview"></span>Оранжевая</button>
+          <button class="palette-menu-item" role="menuitem" data-palette="pink" title="Розовая" style="--palette-color: #f4b8d4;"><span class="palette-menu-preview"></span>Розовая</button>
+          <button class="palette-menu-item" role="menuitem" data-palette="purple" title="Фиолетовая" style="--palette-color: #d0b8f4;"><span class="palette-menu-preview"></span>Фиолетовая</button>
+          <button class="palette-menu-item" role="menuitem" data-palette="blue" title="Синяя" style="--palette-color: #a8c8f4;"><span class="palette-menu-preview"></span>Синяя</button>
+          <button class="palette-menu-item" role="menuitem" data-palette="green" title="Зелёная" style="--palette-color: #a8f4c8;"><span class="palette-menu-preview"></span>Зелёная</button>
+          <button class="palette-menu-item" role="menuitem" data-palette="cyan" title="Голубая" style="--palette-color: #a8f4f4;"><span class="palette-menu-preview"></span>Голубая</button>
+          <button class="palette-menu-item" role="menuitem" data-palette="red" title="Красная" style="--palette-color: #f4a8a8;"><span class="palette-menu-preview"></span>Красная</button>
+          <button class="palette-menu-item" role="menuitem" data-palette="black" title="Чёрная" style="--palette-color: #4a4a4a;"><span class="palette-menu-preview"></span>Чёрная</button>
+          <button class="palette-menu-item" role="menuitem" data-palette="white" title="Белая" style="--palette-color: #fefefe;"><span class="palette-menu-preview"></span>Белая</button>
+        </div>
+      </div>
+      <div class="difficulty-selector">
+        <button class="diff-btn active" data-difficulty="easy">Лёгкий (9×9, 10)</button>
+        <button class="diff-btn" data-difficulty="medium">Средний (16×16, 40)</button>
+        <button class="diff-btn" data-difficulty="hard">Сложный (30×16, 99)</button>
+      </div>
+    </header>
+    <main class="grid" id="grid"></main>
+    <footer>
+      <button class="new-game-btn">Новая игра</button>
+    </footer>
+  </div>
+
+  <div class="modal-overlay" id="win-modal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="win-title">
+      <h2 id="win-title">🎉 Победа!</h2>
+      <div class="win-stats">
+        <div class="win-stat">
+          <span class="win-stat-label">Время</span>
+          <span class="win-stat-value" id="win-time">00:00</span>
+        </div>
+        <div class="win-stat">
+          <span class="win-stat-label">Сложность</span>
+          <span class="win-stat-value" id="win-difficulty">Лёгкий</span>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn primary" id="play-again-btn">Играть ещё раз</button>
+        <button class="modal-btn secondary" id="new-game-modal-btn">Новая игра</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="loss-modal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="loss-title">
+      <button class="modal-close" aria-label="Закрыть и посмотреть поле" id="loss-close-btn">×</button>
+      <h2 id="loss-title">💥 Игра окончена</h2>
+      <div id="easter-egg-cat" class="easter-egg-cat" style="display: none;"></div>
+      <div class="win-stats">
+        <div class="win-stat">
+          <span class="win-stat-label">Время</span>
+          <span class="win-stat-value" id="loss-time">00:00</span>
+        </div>
+        <div class="win-stat">
+          <span class="win-stat-label">Сложность</span>
+          <span class="win-stat-value" id="loss-difficulty">Лёгкий</span>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn primary" id="try-again-btn">Попробовать снова</button>
+        <button class="modal-btn secondary" id="new-game-loss-btn">Новая игра</button>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
