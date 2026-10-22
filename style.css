@@ -654,6 +654,7 @@ h1 {
   position: relative;
   contain: layout style paint;
   transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+  touch-action: none;
 }
 
 .grid::before {
@@ -691,6 +692,16 @@ body.theme-dark .grid::before {
   will-change: transform, background;
   contain: layout style paint;
   box-shadow: 0 1px 2px var(--glass-shadow);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Touch long-press visual feedback */
+.cell.touch-press {
+  transform: scale(0.95);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 0 2px var(--accent);
+  border-color: var(--accent);
+  background: var(--cell-revealed);
 }
 
 .cell:hover:not(.revealed):not(.flagged) {
@@ -828,6 +839,14 @@ footer {
   z-index: 1;
 }
 
+.mobile-hint {
+  margin-top: 16px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-family: var(--font-sans);
+  line-height: 1.4;
+}
+
 .new-game-btn {
   background: var(--accent);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
@@ -871,6 +890,18 @@ footer {
   .cell { width: 28px; height: 28px; font-size: 0.85rem; }
   .status { font-size: 0.9rem; }
   .diff-btn { min-width: 0; font-size: 0.65rem; padding: 10px 8px; }
+}
+
+@media (max-width: 360px) {
+  .cell { width: 24px; height: 24px; font-size: 0.75rem; }
+  .grid { gap: 3px; padding: 3px; }
+  h1 { font-size: 1.7rem; }
+  .status { font-size: 0.8rem; padding: 8px 12px; }
+  .diff-btn { font-size: 0.6rem; padding: 8px 6px; }
+  .theme-toggle, .palette-toggle { width: 38px; height: 38px; }
+  .theme-toggle { font-size: 1.1rem; }
+  .palette-toggle-preview { width: 22px; height: 22px; }
+  .new-game-btn { padding: 12px 24px; font-size: 0.85rem; }
 }
 
 /* Custom modal */

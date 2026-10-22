@@ -104,6 +104,25 @@ function renderGrid() {
           startFlagDrag(r, c, e);
         }
       });
+      
+      // Touch long-press to flag
+      btn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        cancelTouchLongPress();
+        startTouchLongPress(r, c, e);
+      });
+      
+      btn.addEventListener('touchend', (e) => {
+        // If long press didn't trigger, allow click
+        if (touchCell && touchCell.r === r && touchCell.c === c) {
+          cell._touchHandled = false;
+        }
+        cancelTouchLongPress();
+      });
+      
+      btn.addEventListener('touchcancel', (e) => {
+        cancelTouchLongPress();
+      });
 
       cell.element = btn;
       gridEl.appendChild(btn);
@@ -189,6 +208,13 @@ function calculateNeighbors() {
 let isFlagDragging = false;
 let flagDragTarget = null; // 'flag' or 'unflag'
 
+// Touch long-press and drag flagging
+let touchTimer = null;
+let touchCell = null;
+let isTouchFlagDragging = false;
+let touchFlagDragTarget = null;
+const LONG_PRESS_DELAY = 500; // ms
+
 function startFlagDrag(r, c, e) {
   if (gameOver) return;
   const cell = grid[r][c];
@@ -213,6 +239,93 @@ function startFlagDrag(r, c, e) {
   // Add global listeners for drag
   document.addEventListener('mousemove', handleFlagDragMove);
   document.addEventListener('mouseup', handleFlagDragEnd);
+}
+
+function startTouchLongPress(r, c, e) {
+  if (gameOver) return;
+  const cell = grid[r][c];
+  if (cell.revealed) return;
+  
+  touchCell = { r, c };
+  
+  touchTimer = setTimeout(() => {
+    if (touchCell && touchCell.r === r && touchCell.c === c) {
+      // Long press detected - start touch drag flagging
+      isTouchFlagDragging = true;
+      touchFlagDragTarget = cell.flagged ? 'unflag' : 'flag';
+      touchCell = null;
+      
+      // Visual feedback for long press
+      cell.element.classList.add('touch-press');
+      
+      // Mark cell as touch-handled to prevent click
+      cell._touchHandled = true;
+      
+      // Apply immediately to the starting cell
+      if (touchFlagDragTarget === 'flag') {
+        cell.flagged = true;
+      } else {
+        cell.flagged = false;
+      }
+      updateCellDisplay(cell);
+      updateMinesLeft();
+      
+      // Haptic feedback if available
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }
+    touchTimer = null;
+  }, LONG_PRESS_DELAY);
+}
+
+function handleTouchMove(e) {
+  if (!isTouchFlagDragging) return;
+  
+  e.preventDefault();
+  
+  const touch = e.touches[0];
+  const cellEl = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (!cellEl || !cellEl.classList.contains('cell')) return;
+  
+  const r = parseInt(cellEl.dataset.row);
+  const c = parseInt(cellEl.dataset.col);
+  const cell = grid[r][c];
+  
+  if (cell.revealed) return;
+  
+  // Apply flag/unflag based on initial action
+  if (touchFlagDragTarget === 'flag' && !cell.flagged) {
+    cell.flagged = true;
+    updateCellDisplay(cell);
+    updateMinesLeft();
+  } else if (touchFlagDragTarget === 'unflag' && cell.flagged) {
+    cell.flagged = false;
+    updateCellDisplay(cell);
+    updateMinesLeft();
+  }
+}
+
+function handleTouchEnd() {
+  isTouchFlagDragging = false;
+  touchFlagDragTarget = null;
+  // Remove touch-press class from all cells
+  document.querySelectorAll('.cell.touch-press').forEach(el => {
+    el.classList.remove('touch-press');
+  });
+  cancelTouchLongPress();
+}
+
+function cancelTouchLongPress() {
+  if (touchTimer) {
+    clearTimeout(touchTimer);
+    touchTimer = null;
+    touchCell = null;
+  }
+  // Remove touch-press class from all cells
+  document.querySelectorAll('.cell.touch-press').forEach(el => {
+    el.classList.remove('touch-press');
+  });
 }
 
 function handleFlagDragMove(e) {
@@ -245,12 +358,28 @@ function handleFlagDragEnd() {
   flagDragTarget = null;
   document.removeEventListener('mousemove', handleFlagDragMove);
   document.removeEventListener('mouseup', handleFlagDragEnd);
+  // Also clean up touch drag
+  isTouchFlagDragging = false;
+  touchFlagDragTarget = null;
 }
+
+document.addEventListener('mousemove', handleFlagDragMove);
+document.addEventListener('mouseup', handleFlagDragEnd);
+
+// Touch drag listeners
+document.addEventListener('touchmove', handleTouchMove, { passive: false });
+document.addEventListener('touchend', handleTouchEnd);
 
 function handleClick(r, c) {
   if (gameOver) return;
   const cell = grid[r][c];
   if (cell.flagged) return;
+
+  // Prevent click from registering after a long press/touch drag
+  if (cell._touchHandled) {
+    cell._touchHandled = false;
+    return;
+  }
 
   if (firstClick) {
     firstClick = false;
