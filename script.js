@@ -86,10 +86,23 @@ function renderGrid() {
       btn.dataset.col = c;
       btn.setAttribute('aria-label', `Клетка ${r + 1}, ${c + 1}`);
 
-      btn.addEventListener('click', () => handleClick(r, c));
+      btn.addEventListener('click', (e) => {
+        if (e.shiftKey) {
+          e.preventDefault();
+          handleRightClick(r, c);
+        } else {
+          handleClick(r, c);
+        }
+      });
       btn.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         handleRightClick(r, c);
+      });
+      // Mouse hold/drag to flag
+      btn.addEventListener('mousedown', (e) => {
+        if (e.button === 0 && !e.shiftKey) {
+          startFlagDrag(r, c, e);
+        }
       });
 
       cell.element = btn;
@@ -170,6 +183,68 @@ function calculateNeighbors() {
       grid[r][c].neighborMines = count;
     }
   }
+}
+
+// Mouse hold/drag flagging
+let isFlagDragging = false;
+let flagDragTarget = null; // 'flag' or 'unflag'
+
+function startFlagDrag(r, c, e) {
+  if (gameOver) return;
+  const cell = grid[r][c];
+  if (cell.revealed) return;
+  
+  // Determine action based on current state
+  flagDragTarget = cell.flagged ? 'unflag' : 'flag';
+  isFlagDragging = true;
+  
+  // Apply immediately to the starting cell
+  if (flagDragTarget === 'flag') {
+    cell.flagged = true;
+  } else {
+    cell.flagged = false;
+  }
+  updateCellDisplay(cell);
+  updateMinesLeft();
+  
+  // Prevent text selection during drag
+  e.preventDefault();
+  
+  // Add global listeners for drag
+  document.addEventListener('mousemove', handleFlagDragMove);
+  document.addEventListener('mouseup', handleFlagDragEnd);
+}
+
+function handleFlagDragMove(e) {
+  if (!isFlagDragging) return;
+  
+  // Find cell under mouse
+  const cellEl = document.elementFromPoint(e.clientX, e.clientY);
+  if (!cellEl || !cellEl.classList.contains('cell')) return;
+  
+  const r = parseInt(cellEl.dataset.row);
+  const c = parseInt(cellEl.dataset.col);
+  const cell = grid[r][c];
+  
+  if (cell.revealed) return;
+  
+  // Apply flag/unflag based on initial action
+  if (flagDragTarget === 'flag' && !cell.flagged) {
+    cell.flagged = true;
+    updateCellDisplay(cell);
+    updateMinesLeft();
+  } else if (flagDragTarget === 'unflag' && cell.flagged) {
+    cell.flagged = false;
+    updateCellDisplay(cell);
+    updateMinesLeft();
+  }
+}
+
+function handleFlagDragEnd() {
+  isFlagDragging = false;
+  flagDragTarget = null;
+  document.removeEventListener('mousemove', handleFlagDragMove);
+  document.removeEventListener('mouseup', handleFlagDragEnd);
 }
 
 function handleClick(r, c) {
