@@ -105,19 +105,18 @@ function renderGrid() {
         }
       });
       
-      // Touch long-press to flag
+      // Touch events for mobile
       btn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
         cancelTouchLongPress();
         startTouchLongPress(r, c, e);
-      });
+      }, { passive: true });
+      
+      btn.addEventListener('touchmove', (e) => {
+        handleTouchMove(e, r, c);
+      }, { passive: false });
       
       btn.addEventListener('touchend', (e) => {
-        // If long press didn't trigger, allow click
-        if (touchCell && touchCell.r === r && touchCell.c === c) {
-          cell._touchHandled = false;
-        }
-        cancelTouchLongPress();
+        handleTouchEnd(e, r, c);
       });
       
       btn.addEventListener('touchcancel', (e) => {
@@ -217,9 +216,13 @@ let flagDragStartY = 0;
 // Touch long-press and drag flagging
 let touchTimer = null;
 let touchCell = null;
+let touchStartX = 0;
+let touchStartY = 0;
+let touchMoved = false;
 let isTouchFlagDragging = false;
 let touchFlagDragTarget = null;
 const LONG_PRESS_DELAY = 500; // ms
+const TOUCH_MOVE_THRESHOLD = 10; // px - movement to cancel long press
 
 function startFlagDrag(r, c, e) {
   if (gameOver) return;
@@ -251,10 +254,14 @@ function startTouchLongPress(r, c, e) {
   const cell = grid[r][c];
   if (cell.revealed) return;
   
+  const touch = e.touches[0];
   touchCell = { r, c };
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+  touchMoved = false;
   
   touchTimer = setTimeout(() => {
-    if (touchCell && touchCell.r === r && touchCell.c === c) {
+    if (touchCell && touchCell.r === r && touchCell.c === c && !touchMoved) {
       // Long press detected - start touch drag flagging
       isTouchFlagDragging = true;
       touchFlagDragTarget = cell.flagged ? 'unflag' : 'flag';
@@ -262,9 +269,6 @@ function startTouchLongPress(r, c, e) {
       
       // Visual feedback for long press
       cell.element.classList.add('touch-press');
-      
-      // Mark cell as touch-handled to prevent click
-      cell._touchHandled = true;
       
       // Apply immediately to the starting cell
       if (touchFlagDragTarget === 'flag') {
@@ -284,40 +288,67 @@ function startTouchLongPress(r, c, e) {
   }, LONG_PRESS_DELAY);
 }
 
-function handleTouchMove(e) {
-  if (!isTouchFlagDragging) return;
+function handleTouchMove(e, startR, startC) {
+  if (isTouchFlagDragging) {
+    // Drag mode - apply flags to cells under finger
+    e.preventDefault();
+    
+    const touch = e.touches[0];
+    const cellEl = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!cellEl || !cellEl.classList.contains('cell')) return;
+    
+    const r = parseInt(cellEl.dataset.row);
+    const c = parseInt(cellEl.dataset.col);
+    const cell = grid[r][c];
+    
+    if (cell.revealed) return;
+    
+    // Apply flag/unflag based on initial action
+    if (touchFlagDragTarget === 'flag' && !cell.flagged) {
+      cell.flagged = true;
+      updateCellDisplay(cell);
+      updateMinesLeft();
+    } else if (touchFlagDragTarget === 'unflag' && cell.flagged) {
+      cell.flagged = false;
+      updateCellDisplay(cell);
+      updateMinesLeft();
+    }
+    return;
+  }
   
-  e.preventDefault();
-  
-  const touch = e.touches[0];
-  const cellEl = document.elementFromPoint(touch.clientX, touch.clientY);
-  if (!cellEl || !cellEl.classList.contains('cell')) return;
-  
-  const r = parseInt(cellEl.dataset.row);
-  const c = parseInt(cellEl.dataset.col);
-  const cell = grid[r][c];
-  
-  if (cell.revealed) return;
-  
-  // Apply flag/unflag based on initial action
-  if (touchFlagDragTarget === 'flag' && !cell.flagged) {
-    cell.flagged = true;
-    updateCellDisplay(cell);
-    updateMinesLeft();
-  } else if (touchFlagDragTarget === 'unflag' && cell.flagged) {
-    cell.flagged = false;
-    updateCellDisplay(cell);
-    updateMinesLeft();
+  // Check if finger moved too much - cancel long press
+  if (touchCell && touchTimer) {
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - touchStartX);
+    const dy = Math.abs(touch.clientY - touchStartY);
+    
+    if (dx > TOUCH_MOVE_THRESHOLD || dy > TOUCH_MOVE_THRESHOLD) {
+      touchMoved = true;
+      cancelTouchLongPress();
+    }
   }
 }
 
-function handleTouchEnd() {
-  isTouchFlagDragging = false;
-  touchFlagDragTarget = null;
-  // Remove touch-press class from all cells
-  document.querySelectorAll('.cell.touch-press').forEach(el => {
-    el.classList.remove('touch-press');
-  });
+function handleTouchEnd(e, r, c) {
+  // If we were in drag mode, just end it
+  if (isTouchFlagDragging) {
+    isTouchFlagDragging = false;
+    touchFlagDragTarget = null;
+    // Remove touch-press class from all cells
+    document.querySelectorAll('.cell.touch-press').forEach(el => {
+      el.classList.remove('touch-press');
+    });
+    cancelTouchLongPress();
+    return;
+  }
+  
+  // If long press didn't trigger and finger didn't move much - treat as click
+  if (touchCell && touchCell.r === r && touchCell.c === c && !touchMoved) {
+    const cell = grid[r][c];
+    // Manually trigger click behavior
+    handleClick(r, c);
+  }
+  
   cancelTouchLongPress();
 }
 
@@ -325,8 +356,9 @@ function cancelTouchLongPress() {
   if (touchTimer) {
     clearTimeout(touchTimer);
     touchTimer = null;
-    touchCell = null;
   }
+  touchCell = null;
+  touchMoved = false;
   // Remove touch-press class from all cells
   document.querySelectorAll('.cell.touch-press').forEach(el => {
     el.classList.remove('touch-press');
@@ -394,10 +426,6 @@ function handleFlagDragEnd() {
 
 document.addEventListener('mousemove', handleFlagDragMove);
 document.addEventListener('mouseup', handleFlagDragEnd);
-
-// Touch drag listeners
-document.addEventListener('touchmove', handleTouchMove, { passive: false });
-document.addEventListener('touchend', handleTouchEnd);
 
 function handleClick(r, c) {
   if (gameOver) return;
