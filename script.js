@@ -207,6 +207,12 @@ function calculateNeighbors() {
 // Mouse hold/drag flagging
 let isFlagDragging = false;
 let flagDragTarget = null; // 'flag' or 'unflag'
+let flagDragStartCell = null;
+let flagDragMoved = false;
+let flagDragCompleted = false;
+const DRAG_THRESHOLD = 5; // px - minimum movement to start dragging
+let flagDragStartX = 0;
+let flagDragStartY = 0;
 
 // Touch long-press and drag flagging
 let touchTimer = null;
@@ -223,15 +229,13 @@ function startFlagDrag(r, c, e) {
   // Determine action based on current state
   flagDragTarget = cell.flagged ? 'unflag' : 'flag';
   isFlagDragging = true;
+  flagDragStartCell = { r, c };
+  flagDragMoved = false;
+  flagDragCompleted = false;
   
-  // Apply immediately to the starting cell
-  if (flagDragTarget === 'flag') {
-    cell.flagged = true;
-  } else {
-    cell.flagged = false;
-  }
-  updateCellDisplay(cell);
-  updateMinesLeft();
+  // Store initial mouse position for drag threshold
+  flagDragStartX = e.clientX;
+  flagDragStartY = e.clientY;
   
   // Prevent text selection during drag
   e.preventDefault();
@@ -240,6 +244,7 @@ function startFlagDrag(r, c, e) {
   document.addEventListener('mousemove', handleFlagDragMove);
   document.addEventListener('mouseup', handleFlagDragEnd);
 }
+
 
 function startTouchLongPress(r, c, e) {
   if (gameOver) return;
@@ -331,6 +336,27 @@ function cancelTouchLongPress() {
 function handleFlagDragMove(e) {
   if (!isFlagDragging) return;
   
+  // Check if mouse has moved enough to start dragging
+  const dx = Math.abs(e.clientX - flagDragStartX);
+  const dy = Math.abs(e.clientY - flagDragStartY);
+  
+  if (!flagDragMoved && (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD)) {
+    flagDragMoved = true;
+    // Apply flag to starting cell only when drag actually starts
+    const startCell = grid[flagDragStartCell.r][flagDragStartCell.c];
+    if (!startCell.revealed) {
+      if (flagDragTarget === 'flag') {
+        startCell.flagged = true;
+      } else {
+        startCell.flagged = false;
+      }
+      updateCellDisplay(startCell);
+      updateMinesLeft();
+    }
+  }
+  
+  if (!flagDragMoved) return;
+  
   // Find cell under mouse
   const cellEl = document.elementFromPoint(e.clientX, e.clientY);
   if (!cellEl || !cellEl.classList.contains('cell')) return;
@@ -354,8 +380,11 @@ function handleFlagDragMove(e) {
 }
 
 function handleFlagDragEnd() {
+  flagDragCompleted = flagDragMoved;
   isFlagDragging = false;
   flagDragTarget = null;
+  flagDragStartCell = null;
+  flagDragMoved = false;
   document.removeEventListener('mousemove', handleFlagDragMove);
   document.removeEventListener('mouseup', handleFlagDragEnd);
   // Also clean up touch drag
@@ -374,6 +403,13 @@ function handleClick(r, c) {
   if (gameOver) return;
   const cell = grid[r][c];
   if (cell.flagged) return;
+
+  // Prevent click from registering after a drag (but allow click after just mousedown without move)
+  if (flagDragCompleted) {
+    // Drag happened, don't process click - the drag already handled flags
+    flagDragCompleted = false; // Reset for next time
+    return;
+  }
 
   // Prevent click from registering after a long press/touch drag
   if (cell._touchHandled) {
