@@ -39,6 +39,11 @@ const newGameLossBtn = document.getElementById('new-game-loss-btn');
 const lossCloseBtn = document.getElementById('loss-close-btn');
 const safeFirstClickEl = document.getElementById('safe-first-click');
 const showCatEastereggEl = document.getElementById('show-cat-easteregg');
+const customCreateBtn = document.getElementById('custom-create-btn');
+const customCancelBtn = document.getElementById('custom-cancel-btn');
+const customRowsEl = document.getElementById('custom-rows');
+const customColsEl = document.getElementById('custom-cols');
+const customMinesEl = document.getElementById('custom-mines');
 
 let safeFirstClick = true;
 let showCatEasteregg = true;
@@ -454,6 +459,14 @@ function initTheme() {
     showCatEasteregg = savedCatEasteregg === 'true';
     showCatEastereggEl.checked = showCatEasteregg;
   }
+
+  // Load custom difficulty settings
+  const savedCustomRows = localStorage.getItem('ms-custom-rows');
+  const savedCustomCols = localStorage.getItem('ms-custom-cols');
+  const savedCustomMines = localStorage.getItem('ms-custom-mines');
+  if (savedCustomRows !== null) customRowsEl.value = savedCustomRows;
+  if (savedCustomCols !== null) customColsEl.value = savedCustomCols;
+  if (savedCustomMines !== null) customMinesEl.value = savedCustomMines;
 }
 
 function updatePaletteUI(palette) {
@@ -504,6 +517,52 @@ diffBtns.forEach(btn => {
   btn.addEventListener('click', () => setDifficulty(btn.dataset.difficulty));
 });
 
+const customDiffBtn = document.querySelector('[data-difficulty="custom"]');
+if (customDiffBtn) {
+  customDiffBtn.addEventListener('click', () => {
+    const modal = document.getElementById('custom-modal');
+    modal.setAttribute('aria-hidden', 'false');
+    modal.classList.add('visible');
+  });
+}
+
+customCreateBtn.addEventListener('click', () => {
+  const rows = parseInt(customRowsEl.value) || 9;
+  const cols = parseInt(customColsEl.value) || 9;
+  const mines = parseInt(customMinesEl.value) || 10;
+  
+  if (rows < 1 || rows > 50 || cols < 1 || cols > 50) {
+    alert('Строки и столбцы: от 1 до 50');
+    return;
+  }
+  
+  if (mines < 1 || mines > rows * cols) {
+    alert(`Мины: от 1 до ${rows * cols}`);
+    return;
+  }
+  
+  currentDifficulty = 'custom';
+  ROWS = rows;
+  COLS = cols;
+  MINE_COUNT = mines;
+  
+  diffBtns.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.difficulty === 'custom');
+  });
+  
+  newGame();
+  
+  const modal = document.getElementById('custom-modal');
+  modal.setAttribute('aria-hidden', 'true');
+  modal.classList.remove('visible');
+});
+
+customCancelBtn.addEventListener('click', () => {
+  const modal = document.getElementById('custom-modal');
+  modal.setAttribute('aria-hidden', 'true');
+  modal.classList.remove('visible');
+});
+
 playAgainBtn.addEventListener('click', () => {
   winModal.classList.remove('visible');
   winModal.setAttribute('aria-hidden', 'true');
@@ -541,6 +600,19 @@ safeFirstClickEl.addEventListener('change', () => {
 showCatEastereggEl.addEventListener('change', () => {
   showCatEasteregg = showCatEastereggEl.checked;
   localStorage.setItem('ms-show-cat-easteregg', String(showCatEasteregg));
+});
+
+// Save custom settings
+customRowsEl.addEventListener('change', () => {
+  localStorage.setItem('ms-custom-rows', customRowsEl.value);
+});
+
+customColsEl.addEventListener('change', () => {
+  localStorage.setItem('ms-custom-cols', customColsEl.value);
+});
+
+customMinesEl.addEventListener('change', () => {
+  localStorage.setItem('ms-custom-mines', customMinesEl.value);
 });
 
 createGrid();

@@ -41,6 +41,7 @@
         <button class="diff-btn active" data-difficulty="easy">Лёгкий (9×9, 10)</button>
         <button class="diff-btn" data-difficulty="medium">Средний (16×16, 40)</button>
         <button class="diff-btn" data-difficulty="hard">Сложный (30×16, 99)</button>
+        <button class="diff-btn" data-difficulty="custom">⚙ Кастом</button>
       </div>
       <div class="settings-row">
         <label class="setting-toggle" title="Первый клик никогда не попадает на мину">
@@ -99,6 +100,31 @@
       <div class="modal-actions">
         <button class="modal-btn primary" id="try-again-btn">Попробовать снова</button>
         <button class="modal-btn secondary" id="new-game-loss-btn">Новая игра</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="custom-modal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="custom-title">
+      <h2 id="custom-title">⚙ Кастомное поле</h2>
+      <p class="modal-hint">Укажите размеры поля и количество мин</p>
+      <div class="custom-fields">
+        <div class="custom-field">
+          <label for="custom-rows">Строки</label>
+          <input type="number" id="custom-rows" min="1" max="50" value="9" placeholder="9">
+        </div>
+        <div class="custom-field">
+          <label for="custom-cols">Столбцы</label>
+          <input type="number" id="custom-cols" min="1" max="50" value="9" placeholder="9">
+        </div>
+        <div class="custom-field">
+          <label for="custom-mines">Мины</label>
+          <input type="number" id="custom-mines" min="1" max="2500" value="10" placeholder="10">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn primary" id="custom-create-btn">Создать</button>
+        <button class="modal-btn secondary" id="custom-cancel-btn">Отмена</button>
       </div>
     </div>
   </div>
