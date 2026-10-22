@@ -37,6 +37,11 @@ const newGameModalBtn = document.getElementById('new-game-modal-btn');
 const tryAgainBtn = document.getElementById('try-again-btn');
 const newGameLossBtn = document.getElementById('new-game-loss-btn');
 const lossCloseBtn = document.getElementById('loss-close-btn');
+const safeFirstClickEl = document.getElementById('safe-first-click');
+const showCatEastereggEl = document.getElementById('show-cat-easteregg');
+
+let safeFirstClick = true;
+let showCatEasteregg = true;
 
 function createGrid() {
   const cellWithGap = CELL_SIZE + GAP;
@@ -89,12 +94,13 @@ function renderGrid() {
 }
 
 function placeMines(excludeRow, excludeCol) {
-  // Сначала ставим мины случайно, исключая 3×3 область вокруг первого клика
+  // Сначала ставим мины случайно
   let placed = 0;
   while (placed < MINE_COUNT) {
     const r = Math.floor(Math.random() * ROWS);
     const c = Math.floor(Math.random() * COLS);
-    if (Math.abs(r - excludeRow) <= 1 && Math.abs(c - excludeCol) <= 1) continue;
+    // Исключаем 3×3 область только если включен безопасный старт
+    if (safeFirstClick && Math.abs(r - excludeRow) <= 1 && Math.abs(c - excludeCol) <= 1) continue;
     if (!grid[r][c].isMine) {
       grid[r][c].isMine = true;
       placed++;
@@ -102,8 +108,8 @@ function placeMines(excludeRow, excludeCol) {
   }
   calculateNeighbors();
 
-  // Если первый клик попал на число > 0, перемещаем мины, чтобы гарантировать 0
-  if (grid[excludeRow][excludeCol].neighborMines > 0) {
+  // Если включен безопасный старт и первый клик попал на число > 0, перемещаем мины
+  if (safeFirstClick && grid[excludeRow][excludeCol].neighborMines > 0) {
     ensureZeroStart(excludeRow, excludeCol);
   }
 }
@@ -333,8 +339,8 @@ function showLossModal() {
 
   diffEl.textContent = currentDifficulty.charAt(0).toUpperCase() + currentDifficulty.slice(1);
 
-  // Easter egg: show cat if player clicked on 0 mines (very lucky/unlucky)
-  if (revealedCount <= 1) {
+  // Easter egg: show cat if player clicked on a mine on first click
+  if (showCatEasteregg && revealedCount <= 1) {
     catEl.style.display = 'block';
     catEl.innerHTML = `
       <div class="cat-container">
@@ -435,6 +441,19 @@ function initTheme() {
   const savedPalette = localStorage.getItem('ms-palette') || 'orange';
   document.body.dataset.palette = savedPalette;
   updatePaletteUI(savedPalette);
+
+  // Load settings
+  const savedSafeClick = localStorage.getItem('ms-safe-first-click');
+  if (savedSafeClick !== null) {
+    safeFirstClick = savedSafeClick === 'true';
+    safeFirstClickEl.checked = safeFirstClick;
+  }
+
+  const savedCatEasteregg = localStorage.getItem('ms-show-cat-easteregg');
+  if (savedCatEasteregg !== null) {
+    showCatEasteregg = savedCatEasteregg === 'true';
+    showCatEastereggEl.checked = showCatEasteregg;
+  }
 }
 
 function updatePaletteUI(palette) {
@@ -512,6 +531,16 @@ newGameLossBtn.addEventListener('click', () => {
 lossCloseBtn.addEventListener('click', () => {
   lossModal.classList.remove('visible');
   lossModal.setAttribute('aria-hidden', 'true');
+});
+
+safeFirstClickEl.addEventListener('change', () => {
+  safeFirstClick = safeFirstClickEl.checked;
+  localStorage.setItem('ms-safe-first-click', String(safeFirstClick));
+});
+
+showCatEastereggEl.addEventListener('change', () => {
+  showCatEasteregg = showCatEastereggEl.checked;
+  localStorage.setItem('ms-show-cat-easteregg', String(showCatEasteregg));
 });
 
 createGrid();
